@@ -21,11 +21,10 @@ describe('ConfigEditor', () => {
     expect(screen.queryByText(/does not support SurrealDB v2\.0/i)).not.toBeInTheDocument();
   });
 
-  it('renders the Access field and no longer the Scope field', () => {
+  it('renders the Access field', () => {
     render(<ConfigEditor options={makeOptions()} onOptionsChange={jest.fn()} />);
 
     expect(screen.getByPlaceholderText('Access')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Scope')).not.toBeInTheDocument();
   });
 
   it('writes the access method to jsonData', () => {

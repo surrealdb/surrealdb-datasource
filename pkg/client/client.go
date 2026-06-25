@@ -13,15 +13,8 @@ type SurrealConfig struct {
 	Namespace string `json:"namespace,omitempty"`
 	Password  string `json:"password,omitempty"`
 	Username  string `json:"username,omitempty"`
-	// Access is the SurrealDB 2.x/3.x access method used for record-level
-	// authentication. It replaces the legacy Scope field.
+	// Access is the SurrealDB access method used for record-level authentication.
 	Access string `json:"access,omitempty"`
-	// Scope is the pre-2.0 SurrealDB authentication scope.
-	//
-	// Deprecated: SCOPE was removed in SurrealDB 3.0 in favour of ACCESS. The
-	// field is retained only so configurations saved by older versions of the
-	// plugin still unmarshal; its value is ignored when signing in.
-	Scope string `json:"scope,omitempty"`
 }
 
 // QueryResult is the plugin-owned representation of a single SurrealQL
