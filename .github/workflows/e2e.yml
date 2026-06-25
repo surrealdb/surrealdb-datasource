@@ -69,6 +69,12 @@ jobs:
       - name: Run Playwright tests
         run: yarn playwright test
 
+      - name: SurrealDB and data-loader logs
+        if: always()
+        run: |
+          echo "==== test-data-loader ===="; docker logs test-data-loader 2>&1 | tail -80 || true
+          echo "==== surrealdb (tail) ===="; docker logs surrealdb 2>&1 | tail -30 || true
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

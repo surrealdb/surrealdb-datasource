@@ -39,8 +39,25 @@ services:
   test-data-loader:
     image: curlimages/curl:latest
     container_name: test-data-loader
-    command: |
-      -v -X POST -u 'root:test' -H 'surreal-ns: test' -H 'surreal-db: test' -H 'Accept: application/json' --data-binary @/dev/shm/surreal-deal-store.surql http://surrealdb:8000/import
+    # SurrealDB 3.x does not auto-create the namespace/database on import, so
+    # define them before importing the fixture (which contains no DEFINE
+    # NAMESPACE/DATABASE of its own). Wait for the server to be healthy first.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until curl -sf http://surrealdb:8000/health >/dev/null 2>&1; do
+          echo "waiting for surrealdb..."; sleep 1;
+        done
+        echo "ensuring namespace/database exist..."
+        curl -sS -u 'root:test' -H 'Accept: application/json' \
+          -X POST http://surrealdb:8000/sql --data 'DEFINE NAMESPACE IF NOT EXISTS test;'
+        curl -sS -u 'root:test' -H 'surreal-ns: test' -H 'Accept: application/json' \
+          -X POST http://surrealdb:8000/sql --data 'DEFINE DATABASE IF NOT EXISTS test;'
+        echo "importing fixture..."
+        curl -v -X POST -u 'root:test' \
+          -H 'surreal-ns: test' -H 'surreal-db: test' -H 'Accept: application/json' \
+          --data-binary @/dev/shm/surreal-deal-store.surql http://surrealdb:8000/import
+        echo "fixture import finished"
     depends_on:
       - surrealdb
     restart: on-failure

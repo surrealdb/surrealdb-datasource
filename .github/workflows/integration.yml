@@ -62,6 +62,12 @@ jobs:
 
       - name: Run integration tests
         run: go test -v ./tests/integration/...
+
+      - name: SurrealDB and data-loader logs
+        if: always()
+        run: |
+          echo "==== test-data-loader ===="; docker logs test-data-loader 2>&1 | tail -80 || true
+          echo "==== surrealdb (tail) ===="; docker logs surrealdb 2>&1 | tail -30 || true
     strategy:
       matrix:
         surreal-version: ['v3.1.5']
