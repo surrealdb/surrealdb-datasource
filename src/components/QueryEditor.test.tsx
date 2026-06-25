@@ -21,7 +21,6 @@ describe('QueryEditor', () => {
         query={query}
         onChange={onChange}
         onRunQuery={jest.fn()}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         datasource={{} as any}
       />
     );
