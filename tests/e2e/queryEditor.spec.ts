@@ -36,9 +36,12 @@ test.describe('Query Editor', () => {
     await panelEditPage.getByGrafanaSelector(selectors.components.CodeEditor.container).click();
     await page.keyboard.press('Meta+A');
     await page.keyboard.press('Control+A');
-    await page.keyboard.insertText('!SELECT month, sum_sales FROM monthly_sales ORDER BY sum_sales DESC');
+    await page.keyboard.insertText('INVALID QUERY FROM monthly_sales');
 
-    await expect(panelEditPage.refreshPanel()).not.toBeOK();
+    // Grafana surfaces a failed query as a panel error while the query request
+    // itself still returns HTTP 200 (the error is carried in the response body),
+    // so assert on the panel's error state rather than the HTTP status.
+    await panelEditPage.refreshPanel();
     await expect(panelEditPage.panel.getErrorIcon()).toBeVisible();
   });
 });
