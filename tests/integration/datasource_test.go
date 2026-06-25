@@ -172,19 +172,21 @@ func TestQueryData_Success(t *testing.T) {
 			}
 
 			if res == nil {
-				t.Errorf("expected response to be non-nil")
-			} else {
-				if len(res.Responses) != 1 {
-					t.Errorf("expected 1 response, got %d", len(res.Responses))
-				}
+				t.Fatalf("expected response to be non-nil")
+			}
+			if len(res.Responses) != 1 {
+				t.Fatalf("expected 1 response, got %d", len(res.Responses))
+			}
 
-				if res.Responses["A"].Frames == nil {
-					t.Errorf("expected frames to be non-nil")
-				}
-
-				if res.Responses["A"].Frames[0].Fields == nil {
-					t.Errorf("expected fields to be non-nil")
-				}
+			response := res.Responses["A"]
+			if response.Error != nil {
+				t.Fatalf("unexpected query error: %v", response.Error)
+			}
+			if len(response.Frames) == 0 {
+				t.Fatalf("expected at least one frame, got none")
+			}
+			if len(response.Frames[0].Fields) == 0 {
+				t.Errorf("expected fields to be non-nil")
 			}
 		})
 	}
