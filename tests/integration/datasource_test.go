@@ -6,12 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/slo"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/pkg/plugin"
 )
 
 // table is a list of test cases for the QueryData method.

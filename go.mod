@@ -1,4 +1,4 @@
-module github.com/grafana-labs/surrealdb-datasource
+module github.com/surrealdb/surrealdb-datasource
 
 go 1.26.3
 

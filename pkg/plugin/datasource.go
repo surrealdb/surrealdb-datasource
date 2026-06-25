@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/slo"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
 )
 
 var (

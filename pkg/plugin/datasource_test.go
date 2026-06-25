@@ -6,10 +6,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/grafana-labs/surrealdb-datasource/internal/mocks"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/surrealdb/surrealdb-datasource/internal/mocks"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/pkg/plugin"
 )
 
 // config is the shared datasource configuration used across the plugin tests.

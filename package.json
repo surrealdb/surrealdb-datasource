@@ -16,7 +16,7 @@
     "test": "jest --watch --onlyChanged",
     "typecheck": "tsc --noEmit"
   },
-  "author": "Grafana Labs",
+  "author": "SurrealDB",
   "license": "Apache-2.0",
   "devDependencies": {
     "@babel/core": "^7.28.0",

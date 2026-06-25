@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/grafana-labs/surrealdb-datasource/internal/mocks"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/internal/mocks"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
 )
 
 func testConfig() *client.SurrealConfig {

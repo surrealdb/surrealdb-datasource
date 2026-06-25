@@ -83,7 +83,7 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
     <>
       <DataSourceDescription
         dataSourceName="SurrealDB"
-        docsLink="https://grafana.com/grafana/plugins/surrealdb-datasource/"
+        docsLink="https://github.com/surrealdb/surrealdb-datasource"
         hasRequiredFields
       />
       <Divider />
@@ -96,7 +96,7 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
           </div>
           <div>
             Found a bug? Have a suggestion? Open an issue on{' '}
-            <TextLink href="https://github.com/grafana/surrealdb-datasource/issues" external inline>
+            <TextLink href="https://github.com/surrealdb/surrealdb-datasource/issues" external inline>
               Github
             </TextLink>
             !

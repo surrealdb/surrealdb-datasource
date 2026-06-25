@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
 	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 

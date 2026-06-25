@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
 )
 
 // MockSurrealDBClient is a mock implementation of the client.SurrealDBClient
