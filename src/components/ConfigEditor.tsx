@@ -43,10 +43,10 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
     onOptionsChange({ ...options, jsonData });
   };
 
-  const onScopeChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onAccessChange = (event: ChangeEvent<HTMLInputElement>) => {
     const jsonData = {
       ...options.jsonData,
-      scope: event.target.value,
+      access: event.target.value,
     };
 
     onOptionsChange({ ...options, jsonData });
@@ -87,19 +87,6 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
         hasRequiredFields
       />
       <Divider />
-      <Alert title="SurrealDB v2.0 compatibility" severity="warning">
-        <Stack direction="column">
-          <div>
-            The Grafana SurrealDB datasource currently does not support SurrealDB v2.0. Please ensure you are using a
-            compatible version of SurrealDB (v1.x) for full functionality. Follow the GitHub issue{' '}
-            <TextLink href="https://github.com/grafana/surrealdb-datasource/issues/441" external inline>
-              here
-            </TextLink>{' '}
-            for updates on compatibility.
-          </div>
-        </Stack>
-      </Alert>
-
       <Alert title="This datasource is currently experimental" severity="warning">
         <Stack direction="column">
           <div>
@@ -202,15 +189,18 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
             onChange={onPasswordChange}
           />
         </Field>
-        <Field label={'Scope'} description={'The scope to use for the connection.'}>
+        <Field
+          label={'Access'}
+          description={'The access method to use for record-level authentication. (Optional)'}
+        >
           <Input
-            name="scope"
+            name="access"
             width={40}
-            value={jsonData.scope || ''}
-            onChange={onScopeChange}
-            label={'Scope'}
-            aria-label={'Scope'}
-            placeholder={'Scope'}
+            value={jsonData.access || ''}
+            onChange={onAccessChange}
+            label={'Access'}
+            aria-label={'Access'}
+            placeholder={'Access'}
           />
         </Field>
       </ConfigSection>

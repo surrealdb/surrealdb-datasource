@@ -10,6 +10,7 @@ import (
 	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/slo"
 )
 
@@ -186,6 +187,46 @@ func TestQueryData_Success(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestQueryData_DateTimeColumnTyped verifies that a SurrealDB datetime column is
+// decoded from CBOR and surfaced as a time-typed Grafana field (not a string),
+// which is what makes time-series panels work end to end.
+func TestQueryData_DateTimeColumnTyped(t *testing.T) {
+	instance, err := createTestInstance()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	req := backend.QueryDataRequest{
+		PluginContext: backend.PluginContext{OrgID: 1},
+		Queries: []backend.DataQuery{
+			{RefID: "A", JSON: createJsonRequest("SELECT time.created_at AS created FROM person LIMIT 5;")},
+		},
+	}
+
+	res, err := (*instance.(*slo.MetricsWrapper)).QueryData(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	frames := res.Responses["A"].Frames
+	if len(frames) == 0 || len(frames[0].Fields) == 0 {
+		t.Fatalf("expected a frame with at least one field, got %+v", res.Responses["A"])
+	}
+
+	var created *data.Field
+	for _, f := range frames[0].Fields {
+		if f.Name == "created" {
+			created = f
+		}
+	}
+	if created == nil {
+		t.Fatal("expected a 'created' field in the response frame")
+	}
+	if created.Type() != data.FieldTypeNullableTime {
+		t.Errorf("expected 'created' to be a nullable time field, got %v", created.Type())
 	}
 }
 

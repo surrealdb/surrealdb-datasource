@@ -16,8 +16,14 @@ export interface SurrealDataSourceOptions extends DataSourceJsonData {
   database?: string;
   endpoint?: string;
   namespace?: string;
-  scope?: string;
   username?: string;
+  /** SurrealDB 2.x/3.x access method, used for record-level authentication. */
+  access?: string;
+  /**
+   * @deprecated SCOPE was removed in SurrealDB 3.0 in favour of `access`. Kept
+   * so configurations saved by older plugin versions still load; it is ignored.
+   */
+  scope?: string;
 }
 
 /**

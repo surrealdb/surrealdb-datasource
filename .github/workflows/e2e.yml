@@ -40,19 +40,10 @@ jobs:
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps
 
-      # run the default compose file for the latest version of SurrealDB
-      - if: matrix.surreal-version == 'latest'
-        name: Install and run Docker Compose
+      - name: Install and run Docker Compose
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df
         with:
           compose-file: './compose.yaml'
-
-      # run the v1 compose file for SurrealDB 1.5.4
-      - if: matrix.surreal-version == '1.5.4'
-        name: Install and run Docker Compose
-        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df
-        with:
-          compose-file: './compose-v1.yaml'
 
       - name: Wait for Grafana to start
         run: |
@@ -69,9 +60,5 @@ jobs:
           retention-days: 30
     strategy:
       matrix:
-        surreal-version: [
-            # TODO: re-enable this step when the 2.0 is supported
-            # 'latest',
-            '1.5.4',
-          ]
+        surreal-version: ['v3.1.5']
     timeout-minutes: 60

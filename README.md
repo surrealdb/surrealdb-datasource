@@ -2,9 +2,9 @@
 
 The SurrealDB datasource plugin enables you to query and visualize SurrealDB data directly within Grafana, offering seamless integration and exploration of SurrealDB datasets.
 
-## ⚠️ SurrealDB v2.0 compatibility
+## SurrealDB version compatibility
 
-**Important:** The Grafana SurrealDB datasource currently does not support SurrealDB v2.0. Please ensure you are using a compatible version of SurrealDB (v1.x) for full functionality. Follow the GitHub issue [here](https://github.com/grafana/surrealdb-datasource/issues/441) for updates on compatibility.
+This version of the datasource targets **SurrealDB 3.x** (it connects using the SurrealDB Go SDK v1.x over the WebSocket RPC protocol). Use a SurrealDB 3.x server for full functionality.
 
 ## ⚠️ This plugin is currently experimental
 
@@ -38,7 +38,7 @@ Please refer to our [Data Source Management documentation](https://grafana.com/d
 | ---------------- | --------------------------------------------------------------------------------------------------------------- |
 | Username         | Your SurrealDB username                                                                                         |
 | Password         | Your SurrealDB password                                                                                         |
-| Scope            | The [scope](https://docs.surrealdb.com/docs/surrealql/statements/define/scope/) to use for the user. (Optional) |
+| Access           | The [access method](https://surrealdb.com/docs/surrealql/statements/define/access) to use for record-level authentication. (Optional) |
 
 **We strongly recommend that you make your queries with a user account that has read-only access.** This practice not only safeguards your data but also helps maintain system integrity.
 
@@ -48,9 +48,30 @@ The query editor allows you to write SurrealQL queries. For more information abo
 
 In this version, only a SurrealQL Editor is provided to write queries with. A Query Builder UI is planned for a later version of the plugin.
 
+#### Time macros
+
+The following macros are expanded before a query is sent to SurrealDB, so dashboard time ranges can drive your queries. They emit SurrealDB datetime literals (`d'...'`):
+
+| Macro | Expands to |
+| ----- | ---------- |
+| `$__timeFrom(col)` | `col >= d'<from>'` |
+| `$__timeTo(col)` | `col <= d'<to>'` |
+| `$__timeFilter(col)` | `col >= d'<from>' AND col <= d'<to>'` |
+| `$__timeGroup(col, unit)` | `time::group(col, 'unit')` |
+
+For example, a time-series query might look like:
+
+```surql
+SELECT time::group(created_at, 'hour') AS time, count() AS value
+FROM events
+WHERE $__timeFilter(created_at)
+GROUP BY time
+ORDER BY time
+```
+
 ## Development
 
-This project requires **at least Node.js v20** and **at least Go 1.21**.
+This project requires **at least Node.js v20** and **at least Go 1.23**.
 
 Version management configuration for Node.js is provided for [`volta`](https://volta.sh/). It is recommended that you have this installed to automatically switch between Node.js versions when you enter the project directory. This allows for more deterministic and reproducible builds, which makes debugging easier.
 
@@ -121,7 +142,7 @@ You can run this command again to update the version.
    npm run server
    ```
 
-6. Run the E2E tests (using Cypress)
+6. Run the E2E tests (using Playwright)
 
    ```bash
    # Spins up a Grafana instance first that we tests against

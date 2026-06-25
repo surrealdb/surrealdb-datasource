@@ -32,7 +32,7 @@ Please refer to our [Data Source Management documentation](https://grafana.com/d
 | ---------------- | --------------------------------------------------------------------------------------------------------------- |
 | Username         | Your SurrealDB username                                                                                         |
 | Password         | Your SurrealDB password                                                                                         |
-| Scope            | The [scope](https://docs.surrealdb.com/docs/surrealql/statements/define/scope/) to use for the user. (Optional) |
+| Access           | The [access method](https://surrealdb.com/docs/surrealql/statements/define/access) to use for record-level authentication. (Optional) |
 
 **We strongly recommend that you make your queries with a user account that has read-only access.** This practice not only safeguards your data but also helps maintain system integrity.
 
@@ -41,3 +41,5 @@ Please refer to our [Data Source Management documentation](https://grafana.com/d
 The query editor allows you to write SurrealQL queries. For more information about writing SurrealQL queries, please refer to [SurrealDB's documentation](https://docs.surrealdb.com/docs/surrealql/overview).
 
 In this version, only a SurrealQL Editor is provided to write queries with. A Query Builder UI is planned for a later version of the plugin.
+
+The following time macros expand to SurrealDB datetime literals so dashboard time ranges drive your queries: `$__timeFrom(col)`, `$__timeTo(col)`, `$__timeFilter(col)`, and `$__timeGroup(col, unit)`.

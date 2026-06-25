@@ -1,6 +1,5 @@
-# This docker compose file is for the v2 branch of SurrealDB. It is used for the CI pipeline 
-# and can also be used for local development. If you're looking for a compose file for the v1 branch,
-# please refer to the tests/config/v1/compose.yaml file.
+# This docker compose file runs Grafana with the plugin against SurrealDB 3.x.
+# It is used by the CI pipeline and can also be used for local development.
 
 services:
   grafana:
@@ -9,13 +8,13 @@ services:
       context: ./.config
       args:
         grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
-        grafana_version: ${GRAFANA_VERSION:-11.2.1}
+        grafana_version: ${GRAFANA_VERSION:-13.1.0}
         # remove the following line when developing to have backend debugger
         development: "false"
     ports:
       - 3000:3000
     volumes:
-      - ./dist:/var/lib/grafana/plugins/grafanalabs-surrealdb-datasource
+      - ./dist:/var/lib/grafana/plugins/grafana-surrealdb-datasource
       - ./provisioning:/etc/grafana/provisioning
       - .:/root/grafana-surrealdb-datasource
     healthcheck:
@@ -29,13 +28,7 @@ services:
     networks:
       - surrealdb
   surrealdb:
-    # The image is pinned to v2.0.2 to avoid a bug in the 2.0.3-4 releases.
-    # In the 2.0.3 release, an issue was introduced that caused the SurrealDB
-    # server to take an unacceptably long time to index data, causing issues 
-    # with the tests.
-    #
-    # https://github.com/surrealdb/vart/pull/54#issue-2577952172
-    image: surrealdb/surrealdb:v2.0.2
+    image: surrealdb/surrealdb:v3.1.5
     container_name: surrealdb
     restart: always
     command: start memory --log trace --username root --password test --allow-all

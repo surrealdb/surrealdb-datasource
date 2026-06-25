@@ -32,7 +32,7 @@
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=9.5.3",
+    "grafanaDependency": ">=12.3.0",
     "plugins": []
   },
   "category": "sql"
