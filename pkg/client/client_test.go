@@ -50,12 +50,11 @@ func TestConnect_Success(t *testing.T) {
 
 func TestConnect_SignInError(t *testing.T) {
 	mockDB := mocks.MockSurrealDBClient{
+		UseFunc: func(_ context.Context, _, _ string) error {
+			return nil
+		},
 		SignInFunc: func(_ context.Context, _ *client.SurrealConfig) (string, error) {
 			return "", errors.New("signin error")
-		},
-		UseFunc: func(_ context.Context, _, _ string) error {
-			t.Error("Use should not be called when sign-in fails")
-			return nil
 		},
 	}
 
@@ -68,11 +67,12 @@ func TestConnect_SignInError(t *testing.T) {
 
 func TestConnect_UseError(t *testing.T) {
 	mockDB := mocks.MockSurrealDBClient{
-		SignInFunc: func(_ context.Context, _ *client.SurrealConfig) (string, error) {
-			return "token", nil
-		},
 		UseFunc: func(_ context.Context, _, _ string) error {
 			return errors.New("use error")
+		},
+		SignInFunc: func(_ context.Context, _ *client.SurrealConfig) (string, error) {
+			t.Error("SignIn should not be called when Use fails")
+			return "", nil
 		},
 	}
 

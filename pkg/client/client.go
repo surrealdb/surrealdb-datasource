@@ -78,14 +78,22 @@ func Dial(ctx context.Context, endpoint string) (SurrealDBClient, error) {
 	return &realClient{db: db}, nil
 }
 
-// Connect authenticates against SurrealDB and selects the configured namespace
-// and database.
+// Connect selects the configured namespace and database, then authenticates.
+//
+// Use is called before SignIn because the HTTP transport is stateless and must
+// have the namespace/database set to build the request headers for every RPC,
+// including sign-in itself; otherwise it fails with "namespace or database or
+// both are not set". On WebSocket the order is immaterial.
 func (c *Client) Connect(ctx context.Context, config *SurrealConfig) error {
+	if err := c.db.Use(ctx, config.Namespace, config.Database); err != nil {
+		return err
+	}
+
 	if _, err := c.db.SignIn(ctx, config); err != nil {
 		return err
 	}
 
-	return c.db.Use(ctx, config.Namespace, config.Database)
+	return nil
 }
 
 // Query runs a SurrealQL statement (or statements) and returns one QueryResult
