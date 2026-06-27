@@ -6,11 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/slo"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/pkg/plugin"
 )
 
 // table is a list of test cases for the QueryData method.
@@ -35,8 +36,8 @@ var cases = []struct {
 		name:  "SELECT query with ORDER BY clause",
 	},
 	{
-		input: "SELECT * FROM person WHERE first_name ~ 'aaron';",
-		name:  "SELECT with fuzzy equality",
+		input: "SELECT * FROM person WHERE string::contains(string::lowercase(name), 'aaron');",
+		name:  "SELECT with string contains",
 	},
 	{
 		input: "SELECT * FROM person WHERE company_name == NONE;",
@@ -167,25 +168,62 @@ func TestQueryData_Success(t *testing.T) {
 			res, err := (*instance.(*slo.MetricsWrapper)).QueryData(context.Background(), &req)
 
 			if err != nil {
-				t.Errorf("unexpected error: %s", err)
+				t.Fatalf("unexpected error: %s", err)
+			}
+			if res == nil {
+				t.Fatalf("expected response to be non-nil")
+			}
+			if len(res.Responses) != 1 {
+				t.Fatalf("expected 1 response, got %d", len(res.Responses))
 			}
 
-			if res == nil {
-				t.Errorf("expected response to be non-nil")
-			} else {
-				if len(res.Responses) != 1 {
-					t.Errorf("expected 1 response, got %d", len(res.Responses))
-				}
-
-				if res.Responses["A"].Frames == nil {
-					t.Errorf("expected frames to be non-nil")
-				}
-
-				if res.Responses["A"].Frames[0].Fields == nil {
-					t.Errorf("expected fields to be non-nil")
-				}
+			// A valid SurrealQL query against an existing table must execute
+			// without error. Row counts are data-dependent, so we don't require a
+			// frame here; frame typing is covered by TestQueryData_DateTimeColumnTyped.
+			if response := res.Responses["A"]; response.Error != nil {
+				t.Errorf("unexpected query error: %v", response.Error)
 			}
 		})
+	}
+}
+
+// TestQueryData_DateTimeColumnTyped verifies that a SurrealDB datetime column is
+// decoded from CBOR and surfaced as a time-typed Grafana field (not a string),
+// which is what makes time-series panels work end to end.
+func TestQueryData_DateTimeColumnTyped(t *testing.T) {
+	instance, err := createTestInstance()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	req := backend.QueryDataRequest{
+		PluginContext: backend.PluginContext{OrgID: 1},
+		Queries: []backend.DataQuery{
+			{RefID: "A", JSON: createJsonRequest("SELECT time::now() AS created FROM person LIMIT 1;")},
+		},
+	}
+
+	res, err := (*instance.(*slo.MetricsWrapper)).QueryData(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	frames := res.Responses["A"].Frames
+	if len(frames) == 0 || len(frames[0].Fields) == 0 {
+		t.Fatalf("expected a frame with at least one field, got %+v", res.Responses["A"])
+	}
+
+	var created *data.Field
+	for _, f := range frames[0].Fields {
+		if f.Name == "created" {
+			created = f
+		}
+	}
+	if created == nil {
+		t.Fatal("expected a 'created' field in the response frame")
+	}
+	if created.Type() != data.FieldTypeNullableTime {
+		t.Errorf("expected 'created' to be a nullable time field, got %v", created.Type())
 	}
 }
 

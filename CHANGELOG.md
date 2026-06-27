@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Add support for **SurrealDB 3.x**, migrating to the `surrealdb.go` v1.x SDK over the WebSocket RPC (CBOR) protocol.
+- Replace the deprecated `scope` authentication field with `access` (SurrealDB 2.x/3.x record access).
+- Build properly typed data frames — datetimes become time fields, numbers/booleans are typed, and record IDs and nested values are rendered sensibly — improving visualizations and time-series support.
+- Add SurrealQL time macros: `$__timeFrom`, `$__timeTo`, `$__timeFilter`, and `$__timeGroup`.
+- Implement connection clean-up on datasource disposal and switch the health check to `RETURN 1;`.
+- Modernize to Grafana 13 / React 19 tooling (`grafana-plugin-sdk-go` and `@grafana/*` dependencies).
+- Update the development environment and CI to SurrealDB 3.x.
+
 ## 0.2.7
 
 - **Chore** no-change version bump to fix release pipeline

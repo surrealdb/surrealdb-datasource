@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/slo"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
 )
 
 var (
@@ -45,25 +44,25 @@ func NewDatasource(ctx context.Context, dsiConfig backend.DataSourceInstanceSett
 
 	config.Password = dsiConfig.DecryptedSecureJSONData["password"]
 
-	db, err := surrealdb.New(config.Endpoint)
+	db, err := client.Dial(ctx, config.Endpoint)
 	if err != nil {
 		return nil, errorsource.DownstreamError(err, false)
 	}
 
-	client := client.Use(db)
+	c := client.Use(db)
 
-	_, err = client.Connect(&config)
-	if err != nil {
+	if err := c.Connect(ctx, &config); err != nil {
+		_ = c.Close(ctx)
 		return nil, errorsource.DownstreamError(fmt.Errorf("unable to connect to database: %w", err), false)
 	}
 
-	return slo.NewMetricsWrapper(NewDatasourceInstance(client, &config), dsiConfig), nil
+	return slo.NewMetricsWrapper(NewDatasourceInstance(c, &config), dsiConfig), nil
 }
 
-// Dispose cleans up the datasource instance resources.
+// Dispose closes the SurrealDB connection when the datasource instance is
+// evicted (for example when its settings change).
 func (d *SurrealDatasource) Dispose() {
-	// Clean up datasource instance resources.
-	// d.db.Close()
+	_ = d.client.Close(context.Background())
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -101,7 +100,7 @@ func (d *SurrealDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 	status := backend.HealthStatusOk
 	message := "Data source is working"
 
-	_, err := d.client.QueryWithContext(ctx, "BEGIN TRANSACTION; CANCEL TRANSACTION;", nil)
+	_, err := d.client.Query(ctx, "RETURN 1;", nil)
 
 	if err != nil {
 		status = backend.HealthStatusError

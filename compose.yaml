@@ -1,6 +1,5 @@
-# This docker compose file is for the v2 branch of SurrealDB. It is used for the CI pipeline 
-# and can also be used for local development. If you're looking for a compose file for the v1 branch,
-# please refer to the tests/config/v1/compose.yaml file.
+# This docker compose file runs Grafana with the plugin against SurrealDB 3.x.
+# It is used by the CI pipeline and can also be used for local development.
 
 services:
   grafana:
@@ -9,13 +8,13 @@ services:
       context: ./.config
       args:
         grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
-        grafana_version: ${GRAFANA_VERSION:-11.2.1}
+        grafana_version: ${GRAFANA_VERSION:-13.1.0}
         # remove the following line when developing to have backend debugger
         development: "false"
     ports:
       - 3000:3000
     volumes:
-      - ./dist:/var/lib/grafana/plugins/grafanalabs-surrealdb-datasource
+      - ./dist:/var/lib/grafana/plugins/grafana-surrealdb-datasource
       - ./provisioning:/etc/grafana/provisioning
       - .:/root/grafana-surrealdb-datasource
     healthcheck:
@@ -29,13 +28,7 @@ services:
     networks:
       - surrealdb
   surrealdb:
-    # The image is pinned to v2.0.2 to avoid a bug in the 2.0.3-4 releases.
-    # In the 2.0.3 release, an issue was introduced that caused the SurrealDB
-    # server to take an unacceptably long time to index data, causing issues 
-    # with the tests.
-    #
-    # https://github.com/surrealdb/vart/pull/54#issue-2577952172
-    image: surrealdb/surrealdb:v2.0.2
+    image: surrealdb/surrealdb:v3.1.5
     container_name: surrealdb
     restart: always
     command: start memory --log trace --username root --password test --allow-all
@@ -46,8 +39,25 @@ services:
   test-data-loader:
     image: curlimages/curl:latest
     container_name: test-data-loader
-    command: |
-      -v -X POST -u 'root:test' -H 'surreal-ns: test' -H 'surreal-db: test' -H 'Accept: application/json' --data-binary @/dev/shm/surreal-deal-store.surql http://surrealdb:8000/import
+    # SurrealDB 3.x does not auto-create the namespace/database on import, so
+    # define them before importing the fixture (which contains no DEFINE
+    # NAMESPACE/DATABASE of its own). Wait for the server to be healthy first.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until curl -sf http://surrealdb:8000/health >/dev/null 2>&1; do
+          echo "waiting for surrealdb..."; sleep 1;
+        done
+        echo "ensuring namespace/database exist..."
+        curl -sS -u 'root:test' -H 'Accept: application/json' \
+          -X POST http://surrealdb:8000/sql --data 'DEFINE NAMESPACE IF NOT EXISTS test;'
+        curl -sS -u 'root:test' -H 'surreal-ns: test' -H 'Accept: application/json' \
+          -X POST http://surrealdb:8000/sql --data 'DEFINE DATABASE IF NOT EXISTS test;'
+        echo "importing fixture..."
+        curl -v -X POST -u 'root:test' \
+          -H 'surreal-ns: test' -H 'surreal-db: test' -H 'Accept: application/json' \
+          --data-binary @/dev/shm/surreal-deal-store.surql http://surrealdb:8000/import
+        echo "fixture import finished"
     depends_on:
       - surrealdb
     restart: on-failure

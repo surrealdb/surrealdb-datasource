@@ -41,15 +41,18 @@ test.describe('Config Editor', () => {
   test('mandatory fields should show error if left empty', async ({ createDataSourceConfigPage, page }) => {
     const configPage = await createDataSourceConfigPage({ type: PLUGIN_UID });
 
-    await page.getByLabel('Database name').fill('');
+    // Locate inputs by placeholder: the "Authentication level" radio group also
+    // exposes options named "Namespace"/"Database", so accessible-name lookups
+    // would be ambiguous.
+    await page.getByPlaceholder('Database name').fill('');
     await page.keyboard.press('Tab');
     await expect(page.getByText('Database name is required')).toBeVisible();
 
-    await page.getByLabel('Namespace').fill('');
+    await page.getByPlaceholder('Namespace').fill('');
     await page.keyboard.press('Tab');
     await expect(page.getByText('Namespace is required')).toBeVisible();
 
-    await page.getByLabel('Username').fill('');
+    await page.getByPlaceholder('Username').fill('');
     await page.keyboard.press('Tab');
     await expect(page.getByText('Username is required')).toBeVisible();
 

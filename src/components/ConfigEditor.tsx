@@ -1,8 +1,14 @@
 import React, { ChangeEvent } from 'react';
-import { Alert, Divider, Field, Input, SecretInput, Stack, TextLink } from '@grafana/ui';
+import { Alert, Divider, Field, Input, RadioButtonGroup, SecretInput, Stack, TextLink } from '@grafana/ui';
 import { DataSourceDescription, ConfigSection } from '@grafana/plugin-ui';
-import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import type { SurrealDataSourceOptions, SurrealSecureJsonData } from '../types';
+import { DataSourcePluginOptionsEditorProps, SelectableValue } from '@grafana/data';
+import type { SurrealAuthScope, SurrealDataSourceOptions, SurrealSecureJsonData } from '../types';
+
+const AUTH_SCOPE_OPTIONS: Array<SelectableValue<SurrealAuthScope>> = [
+  { label: 'Root', value: 'root' },
+  { label: 'Namespace', value: 'namespace' },
+  { label: 'Database', value: 'database' },
+];
 
 interface Props extends DataSourcePluginOptionsEditorProps<SurrealDataSourceOptions> {}
 
@@ -43,13 +49,17 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
     onOptionsChange({ ...options, jsonData });
   };
 
-  const onScopeChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onAccessChange = (event: ChangeEvent<HTMLInputElement>) => {
     const jsonData = {
       ...options.jsonData,
-      scope: event.target.value,
+      access: event.target.value,
     };
 
     onOptionsChange({ ...options, jsonData });
+  };
+
+  const onAuthScopeChange = (authScope: SurrealAuthScope) => {
+    onOptionsChange({ ...options, jsonData: { ...options.jsonData, authScope } });
   };
 
   // Secure field (only sent to the backend)
@@ -83,23 +93,10 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
     <>
       <DataSourceDescription
         dataSourceName="SurrealDB"
-        docsLink="https://grafana.com/grafana/plugins/surrealdb-datasource/"
+        docsLink="https://github.com/surrealdb/surrealdb-datasource"
         hasRequiredFields
       />
       <Divider />
-      <Alert title="SurrealDB v2.0 compatibility" severity="warning">
-        <Stack direction="column">
-          <div>
-            The Grafana SurrealDB datasource currently does not support SurrealDB v2.0. Please ensure you are using a
-            compatible version of SurrealDB (v1.x) for full functionality. Follow the GitHub issue{' '}
-            <TextLink href="https://github.com/grafana/surrealdb-datasource/issues/441" external inline>
-              here
-            </TextLink>{' '}
-            for updates on compatibility.
-          </div>
-        </Stack>
-      </Alert>
-
       <Alert title="This datasource is currently experimental" severity="warning">
         <Stack direction="column">
           <div>
@@ -109,7 +106,7 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
           </div>
           <div>
             Found a bug? Have a suggestion? Open an issue on{' '}
-            <TextLink href="https://github.com/grafana/surrealdb-datasource/issues" external inline>
+            <TextLink href="https://github.com/surrealdb/surrealdb-datasource/issues" external inline>
               Github
             </TextLink>
             !
@@ -137,23 +134,6 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
         </Field>
         <Field
           required
-          label={'Database name'}
-          description={'The name of the database to connect to.'}
-          invalid={!jsonData.database}
-          error={'Database name is required'}
-        >
-          <Input
-            name="port"
-            width={40}
-            value={jsonData.database || ''}
-            onChange={onDatabaseChange}
-            label={'Database name'}
-            aria-label={'Database name'}
-            placeholder={'Database name'}
-          />
-        </Field>
-        <Field
-          required
           label={'Namespace'}
           description={'The namespace to use for the connection.'}
           invalid={!jsonData.namespace}
@@ -169,9 +149,38 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
             placeholder={'Namespace'}
           />
         </Field>
+        <Field
+          required
+          label={'Database name'}
+          description={'The name of the database to connect to.'}
+          invalid={!jsonData.database}
+          error={'Database name is required'}
+        >
+          <Input
+            name="database"
+            width={40}
+            value={jsonData.database || ''}
+            onChange={onDatabaseChange}
+            label={'Database name'}
+            aria-label={'Database name'}
+            placeholder={'Database name'}
+          />
+        </Field>
       </ConfigSection>
       <Divider />
       <ConfigSection title="Authentication">
+        <Field
+          label={'Authentication level'}
+          description={
+            'The level the user authenticates at. Root signs in without a namespace/database; Namespace and Database sign in scoped to the configured namespace (and database).'
+          }
+        >
+          <RadioButtonGroup
+            options={AUTH_SCOPE_OPTIONS}
+            value={jsonData.authScope ?? 'root'}
+            onChange={onAuthScopeChange}
+          />
+        </Field>
         <Field
           required
           label={'Username'}
@@ -202,15 +211,18 @@ export function ConfigEditor({ onOptionsChange, options }: Props) {
             onChange={onPasswordChange}
           />
         </Field>
-        <Field label={'Scope'} description={'The scope to use for the connection.'}>
+        <Field
+          label={'Access'}
+          description={'The access method to use for record-level authentication. (Optional)'}
+        >
           <Input
-            name="scope"
+            name="access"
             width={40}
-            value={jsonData.scope || ''}
-            onChange={onScopeChange}
-            label={'Scope'}
-            aria-label={'Scope'}
-            placeholder={'Scope'}
+            value={jsonData.access || ''}
+            onChange={onAccessChange}
+            label={'Access'}
+            aria-label={'Access'}
+            placeholder={'Access'}
           />
         </Field>
       </ConfigSection>

@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"github.com/surrealdb/surrealdb-datasource/pkg/plugin"
 )
 
 func main() {

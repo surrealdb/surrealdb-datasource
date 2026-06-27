@@ -10,9 +10,10 @@
   "info": {
     "description": "SurrealDB datasource plugin for Grafana",
     "author": {
-      "name": "Grafana Labs"
+      "name": "SurrealDB",
+      "url": "https://surrealdb.com"
     },
-    "keywords": ["datasource", "sql", "surrealdb"],
+    "keywords": ["datasource", "sql", "surrealql", "surrealdb"],
     "logos": {
       "small": "img/logo.png",
       "large": "img/logo.png"
@@ -20,11 +21,11 @@
     "links": [
       {
         "name": "Project site",
-        "url": "https://github.com/grafana/surrealdb-datasource"
+        "url": "https://github.com/surrealdb/surrealdb-datasource"
       },
       {
         "name": "Apache License",
-        "url": "https://github.com/grafana/surrealdb-datasource/blob/main/LICENSE"
+        "url": "https://github.com/surrealdb/surrealdb-datasource/blob/main/LICENSE"
       }
     ],
     "screenshots": [],
@@ -32,7 +33,7 @@
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=9.5.3",
+    "grafanaDependency": ">=12.3.0",
     "plugins": []
   },
   "category": "sql"

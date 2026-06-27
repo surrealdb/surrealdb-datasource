@@ -6,14 +6,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/grafana-labs/surrealdb-datasource/internal/mocks"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/client"
-	"github.com/grafana-labs/surrealdb-datasource/pkg/plugin"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/surrealdb/surrealdb-datasource/internal/mocks"
+	"github.com/surrealdb/surrealdb-datasource/pkg/client"
+	"github.com/surrealdb/surrealdb-datasource/pkg/plugin"
 )
 
-var mock = mocks.MockSurrealDBClient{}
-
+// config is the shared datasource configuration used across the plugin tests.
 var config = client.SurrealConfig{
 	Database:  "grafana_ds_tests",
 	Endpoint:  "ws://localhost:8000/rpc",
@@ -22,74 +21,72 @@ var config = client.SurrealConfig{
 }
 
 func TestNewDatasource_InvalidJSON(t *testing.T) {
-	config := backend.DataSourceInstanceSettings{
+	settings := backend.DataSourceInstanceSettings{
 		JSONData:                json.RawMessage(`invalid json`),
 		DecryptedSecureJSONData: map[string]string{"password": "password"},
 	}
 
-	_, err := plugin.NewDatasource(context.Background(), config)
-
-	if err == nil {
+	if _, err := plugin.NewDatasource(context.Background(), settings); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
 
 func TestQueryData(t *testing.T) {
-	// Create a mock SurrealDatasource with a mock DB client
-	datasource := plugin.NewDatasourceInstance(client.Use(&mock), &config)
+	ds := plugin.NewDatasourceInstance(client.Use(&mocks.MockSurrealDBClient{
+		QueryFunc: func(_ context.Context, _ string, _ map[string]any) ([]client.QueryResult, error) {
+			return []client.QueryResult{{Status: "OK", Rows: []map[string]any{{"a": "1"}}}}, nil
+		},
+	}), &config)
 
-	mockRequest := backend.QueryDataRequest{
+	req := backend.QueryDataRequest{
 		Queries: []backend.DataQuery{
-			{RefID: "query1"},
-			{RefID: "query2"},
+			{RefID: "query1", JSON: []byte(`{"rawSql":"SELECT 1"}`)},
+			{RefID: "query2", JSON: []byte(`{"rawSql":"SELECT 2"}`)},
 		},
 	}
 
-	// this returns a DataResponse no matter what, and that includes errors
-	response, err := datasource.QueryData(context.Background(), &mockRequest)
-
+	response, err := ds.QueryData(context.Background(), &req)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
-	if response == nil {
-		t.Error("expected response to be non-nil")
+	if response == nil || len(response.Responses) != 2 {
+		t.Errorf("expected 2 responses, got %v", response)
 	}
 }
 
 func TestCheckHealth_Success(t *testing.T) {
-	successMock := mocks.MockSurrealDBClient{
-		QueryFunc: func(sql string, vars interface{}) (interface{}, error) {
-			return nil, nil
+	var gotSQL string
+	ds := plugin.NewDatasourceInstance(client.Use(&mocks.MockSurrealDBClient{
+		QueryFunc: func(_ context.Context, sql string, _ map[string]any) ([]client.QueryResult, error) {
+			gotSQL = sql
+			return []client.QueryResult{{Status: "OK"}}, nil
 		},
-	}
+	}), &config)
 
-	datasource := plugin.NewDatasourceInstance(client.Use(&successMock), &config)
-	result, err := datasource.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
-
+	result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
-
-	if result == nil {
-		t.Error("expected result to be non-nil")
+	if result == nil || result.Status != backend.HealthStatusOk {
+		t.Errorf("expected health ok, got %+v", result)
+	}
+	if gotSQL != "RETURN 1;" {
+		t.Errorf("expected probe query 'RETURN 1;', got %q", gotSQL)
 	}
 }
 
 func TestCheckHealth_Error(t *testing.T) {
-	errorMock := mocks.MockSurrealDBClient{
-		QueryFunc: func(sql string, vars interface{}) (interface{}, error) {
+	ds := plugin.NewDatasourceInstance(client.Use(&mocks.MockSurrealDBClient{
+		QueryFunc: func(_ context.Context, _ string, _ map[string]any) ([]client.QueryResult, error) {
 			return nil, errors.New("query error")
 		},
-	}
+	}), &config)
 
-	datasource := plugin.NewDatasourceInstance(client.Use(&errorMock), &config)
-	result, err := datasource.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
-
+	result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
-
-	if result == nil {
-		t.Error("expected result to be non-nil")
+	if result == nil || result.Status != backend.HealthStatusError {
+		t.Errorf("expected health error, got %+v", result)
 	}
 }

@@ -10,16 +10,16 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
           cache: 'yarn'
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: 'stable'
 
@@ -40,28 +40,42 @@ jobs:
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps
 
-      # run the default compose file for the latest version of SurrealDB
-      - if: matrix.surreal-version == 'latest'
-        name: Install and run Docker Compose
+      - name: Install and run Docker Compose
         uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df
         with:
           compose-file: './compose.yaml'
-
-      # run the v1 compose file for SurrealDB 1.5.4
-      - if: matrix.surreal-version == '1.5.4'
-        name: Install and run Docker Compose
-        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df
-        with:
-          compose-file: './compose-v1.yaml'
 
       - name: Wait for Grafana to start
         run: |
           timeout 180 bash -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"; do sleep 1; done && echo "Grafana is up!"'
 
+      - name: Wait for fixture data to load
+        # The surreal-deal-store fixture imports/indexes asynchronously; poll the
+        # HTTP /sql endpoint until it is populated before running the query tests.
+        run: |
+          for i in $(seq 1 90); do
+            resp=$(curl -s -u 'root:test' \
+              -H 'surreal-ns: test' -H 'surreal-db: test' -H 'Accept: application/json' \
+              -X POST http://localhost:8000/sql \
+              --data 'SELECT count() AS c FROM person GROUP ALL;' 2>/dev/null || true)
+            if echo "$resp" | grep -qE '"c": *[1-9]'; then
+              echo "Fixture data loaded after $((i * 2))s: $resp"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "WARNING: timed out waiting for fixture data; last /sql response: $resp"
+
       - name: Run Playwright tests
         run: yarn playwright test
 
-      - uses: actions/upload-artifact@v4
+      - name: SurrealDB and data-loader logs
+        if: always()
+        run: |
+          echo "==== test-data-loader ===="; docker logs test-data-loader 2>&1 | tail -80 || true
+          echo "==== surrealdb (tail) ===="; docker logs surrealdb 2>&1 | tail -30 || true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: playwright-report-${{ matrix.surreal-version }}
@@ -69,9 +83,5 @@ jobs:
           retention-days: 30
     strategy:
       matrix:
-        surreal-version: [
-            # TODO: re-enable this step when the 2.0 is supported
-            # 'latest',
-            '1.5.4',
-          ]
+        surreal-version: ['v3.1.5']
     timeout-minutes: 60
