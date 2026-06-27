@@ -27,6 +27,17 @@ describe('ConfigEditor', () => {
     expect(screen.getByPlaceholderText('Access')).toBeInTheDocument();
   });
 
+  it('sets the authentication level on jsonData', () => {
+    const onOptionsChange = jest.fn();
+    render(<ConfigEditor options={makeOptions()} onOptionsChange={onOptionsChange} />);
+
+    fireEvent.click(screen.getByText('Database'));
+
+    expect(onOptionsChange).toHaveBeenCalledWith(
+      expect.objectContaining({ jsonData: expect.objectContaining({ authScope: 'database' }) })
+    );
+  });
+
   it('writes the access method to jsonData', () => {
     const onOptionsChange = jest.fn();
     render(<ConfigEditor options={makeOptions()} onOptionsChange={onOptionsChange} />);

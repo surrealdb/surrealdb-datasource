@@ -13,7 +13,7 @@
       "name": "SurrealDB",
       "url": "https://surrealdb.com"
     },
-    "keywords": ["datasource", "sql", "surrealdb"],
+    "keywords": ["datasource", "sql", "surrealql", "surrealdb"],
     "logos": {
       "small": "img/logo.png",
       "large": "img/logo.png"

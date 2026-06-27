@@ -29,16 +29,25 @@ Please refer to our [Data Source Management documentation](https://grafana.com/d
 | Field           | Description                                                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Endpoint URL    | The **full** address of the SurrealDB RPC endpoint to connect to, e.g. `ws://localhost:8000/rpc`                  |
-| Database name   | The name of the database to connect to.                                                                           |
 | Namespace       | The [namespace](https://docs.surrealdb.com/docs/surrealql/statements/define/namespace) to use for the connection. |
+| Database name   | The name of the database to connect to.                                                                           |
 
 ### Authentication fields
 
-| Field            | Description                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| Username         | Your SurrealDB username                                                                                         |
-| Password         | Your SurrealDB password                                                                                         |
-| Access           | The [access method](https://surrealdb.com/docs/surrealql/statements/define/access) to use for record-level authentication. (Optional) |
+| Field                | Description                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Authentication level | The level the system user authenticates at: **Root** (default), **Namespace**, or **Database**. See below.     |
+| Username             | Your SurrealDB username                                                                                         |
+| Password             | Your SurrealDB password                                                                                         |
+| Access               | The [access method](https://surrealdb.com/docs/surrealql/statements/define/access) to use for record-level authentication. (Optional) |
+
+SurrealDB determines the authentication level from the credentials you sign in with, so choose the **Authentication level** that matches your user:
+
+- **Root** — a root user (`DEFINE USER ... ON ROOT`). Signs in with only username/password and can query any namespace/database.
+- **Namespace** — a namespace user (`DEFINE USER ... ON NAMESPACE`). Signs in scoped to the configured **Namespace**.
+- **Database** — a database user (`DEFINE USER ... ON DATABASE`). Signs in scoped to the configured **Namespace** and **Database**. Recommended for least-privilege access.
+
+For [record/scope access](https://surrealdb.com/docs/surrealql/statements/define/access), leave the level as Root and set the **Access** field to your access method name. In every case the configured Namespace and Database are selected for your queries.
 
 **We strongly recommend that you make your queries with a user account that has read-only access.** This practice not only safeguards your data but also helps maintain system integrity.
 

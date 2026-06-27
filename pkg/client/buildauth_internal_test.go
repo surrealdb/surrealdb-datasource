@@ -5,30 +5,49 @@ import (
 	"testing"
 )
 
-// TestBuildAuth_OmitsNamespaceAndDatabase documents the authentication model:
-// the namespace and database are selected via Use, not sent in the sign-in
-// payload, because SurrealDB infers the auth level from the fields present and
-// rejects a root user that signs in with a namespace/database set.
-func TestBuildAuth_OmitsNamespaceAndDatabase(t *testing.T) {
-	auth := buildAuth(&SurrealConfig{
-		Namespace: "ns",
-		Database:  "db",
-		Username:  "root",
-		Password:  "secret",
-		Access:    "account",
-	})
+// TestBuildAuth checks that the sign-in payload includes the namespace and
+// database only as appropriate for the authentication level, since SurrealDB
+// infers the level from the fields present (a root user that signs in with a
+// namespace/database set is rejected).
+func TestBuildAuth(t *testing.T) {
+	base := SurrealConfig{Namespace: "ns", Database: "db", Username: "u", Password: "p"}
 
-	if auth.Namespace != "" {
-		t.Errorf("expected namespace to be omitted from sign-in, got %q", auth.Namespace)
+	cases := []struct {
+		name          string
+		scope         string
+		access        string
+		wantNamespace string
+		wantDatabase  string
+		wantAccess    string
+	}{
+		{name: "root by default", scope: "", wantNamespace: "", wantDatabase: ""},
+		{name: "explicit root", scope: AuthScopeRoot, wantNamespace: "", wantDatabase: ""},
+		{name: "namespace user", scope: AuthScopeNamespace, wantNamespace: "ns", wantDatabase: ""},
+		{name: "database user", scope: AuthScopeDatabase, wantNamespace: "ns", wantDatabase: "db"},
+		{name: "record access", scope: AuthScopeRoot, access: "account", wantNamespace: "ns", wantDatabase: "db", wantAccess: "account"},
 	}
-	if auth.Database != "" {
-		t.Errorf("expected database to be omitted from sign-in, got %q", auth.Database)
-	}
-	if auth.Username != "root" || auth.Password != "secret" {
-		t.Errorf("expected credentials to be passed through, got user=%q", auth.Username)
-	}
-	if auth.Access != "account" {
-		t.Errorf("expected access method to be passed through, got %q", auth.Access)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base
+			cfg.AuthScope = tc.scope
+			cfg.Access = tc.access
+
+			auth := buildAuth(&cfg)
+
+			if auth.Username != "u" || auth.Password != "p" {
+				t.Errorf("expected credentials passed through, got user=%q", auth.Username)
+			}
+			if auth.Namespace != tc.wantNamespace {
+				t.Errorf("namespace: got %q, want %q", auth.Namespace, tc.wantNamespace)
+			}
+			if auth.Database != tc.wantDatabase {
+				t.Errorf("database: got %q, want %q", auth.Database, tc.wantDatabase)
+			}
+			if auth.Access != tc.wantAccess {
+				t.Errorf("access: got %q, want %q", auth.Access, tc.wantAccess)
+			}
+		})
 	}
 }
 

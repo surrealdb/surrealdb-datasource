@@ -15,7 +15,21 @@ type SurrealConfig struct {
 	Username  string `json:"username,omitempty"`
 	// Access is the SurrealDB access method used for record-level authentication.
 	Access string `json:"access,omitempty"`
+	// AuthScope selects the level a system user authenticates at: "root"
+	// (default), "namespace", or "database". SurrealDB infers the level from the
+	// fields present in the sign-in payload, so this controls whether the
+	// namespace and database are included. Ignored when Access is set.
+	AuthScope string `json:"authScope,omitempty"`
 }
+
+// Authentication levels for a SurrealDB system user. They map to the fields
+// included in the sign-in payload: root sends neither namespace nor database,
+// namespace sends the namespace, and database sends both.
+const (
+	AuthScopeRoot      = "root"
+	AuthScopeNamespace = "namespace"
+	AuthScopeDatabase  = "database"
+)
 
 // QueryResult is the plugin-owned representation of a single SurrealQL
 // statement result. It mirrors surrealdb.QueryResult but decouples the rest of
@@ -93,18 +107,37 @@ type realClient struct {
 
 // buildAuth maps the datasource configuration onto the SDK auth payload.
 //
-// SurrealDB infers the authentication level from the fields that are set:
-// supplying only a username and password authenticates a root user, while
-// supplying an access method authenticates via record access. The namespace
-// and database are selected separately via Use, so they are deliberately not
-// included here (a root user that signs in with a namespace/database set is
-// rejected by SurrealDB 3.x).
+// SurrealDB infers the authentication level from the fields present in the
+// sign-in payload, so the namespace/database are included only as needed:
+//   - record access (Access set): namespace + database + access method
+//   - database-level user: namespace + database
+//   - namespace-level user: namespace
+//   - root-level user (default): neither
+//
+// The configured namespace/database are always applied separately via Use to
+// select the working context, regardless of the sign-in level.
 func buildAuth(config *SurrealConfig) surrealdb.Auth {
-	return surrealdb.Auth{
+	auth := surrealdb.Auth{
 		Username: config.Username,
 		Password: config.Password,
-		Access:   config.Access,
 	}
+
+	if config.Access != "" {
+		auth.Namespace = config.Namespace
+		auth.Database = config.Database
+		auth.Access = config.Access
+		return auth
+	}
+
+	switch config.AuthScope {
+	case AuthScopeNamespace:
+		auth.Namespace = config.Namespace
+	case AuthScopeDatabase:
+		auth.Namespace = config.Namespace
+		auth.Database = config.Database
+	}
+
+	return auth
 }
 
 func (r *realClient) SignIn(ctx context.Context, config *SurrealConfig) (string, error) {
